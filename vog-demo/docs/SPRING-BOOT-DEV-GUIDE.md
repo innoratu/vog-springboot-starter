@@ -341,11 +341,19 @@ Each of these touches exactly one layer — a good way to learn where things liv
 
 ---
 
-## 12. Where to go next
+## 12. Real-life example
+
+To see these same Spring Boot fundamentals scaled up in a real production TELUS
+service (reactive WebFlux, contract-first APIs, OAuth2, Resilience4j, Redis, GCP
+config), see **[`REAL-LIFE-EXAMPLE.md`](REAL-LIFE-EXAMPLE.md)** — a guided walkthrough
+of [`wls-product-offering-svc`](https://github.com/telus/wls-product-offering-svc).
+
+## 13. Where to go next
 
 - Project overview & how to run: [`../README.md`](../README.md)
 - Beginner run-through of *this* app: [`TUTORIAL.md`](TUTORIAL.md)
 - Environment & Java versions: [`ENVIRONMENT.md`](ENVIRONMENT.md)
+- Real-life reference service: <https://github.com/telus/wls-product-offering-svc>
 - Official VS Code Spring Boot docs: <https://code.visualstudio.com/docs/java/java-spring-boot>
 - Spring Boot reference: <https://docs.spring.io/spring-boot/index.html>
 ```
