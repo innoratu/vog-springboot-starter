@@ -261,14 +261,14 @@ block and reloading.
   container. For most modern apps, keep the default **jar** (self-contained,
   `java -jar target/vog-demo-0.0.1-SNAPSHOT.jar`).
 
-### Swap the embedded web server (Tomcat → Jetty / Undertow)
+### Swap the embedded web server (Tomcat → Jetty)
 Spring Boot runs an **embedded web server** inside the app. `spring-boot-starter-web`
 doesn't hard-wire it — it just *transitively* pulls in `spring-boot-starter-tomcat`,
 and Boot auto-configures whichever servlet container it finds on the classpath. So
 you can swap servers with a **`pom.xml` change and no code changes** in a typical
 app.
 
-Example — switch from Tomcat (default) to **Undertow**:
+Example — switch from Tomcat (default) to **Jetty**:
 ```xml
 <dependency>
   <groupId>org.springframework.boot</groupId>
@@ -282,30 +282,35 @@ Example — switch from Tomcat (default) to **Undertow**:
 </dependency>
 <dependency>
   <groupId>org.springframework.boot</groupId>
-  <artifactId>spring-boot-starter-undertow</artifactId>
+  <artifactId>spring-boot-starter-jetty</artifactId>
 </dependency>
 ```
-Reload the project and rebuild — the same `/api/...` endpoints now run on Undertow.
-For **Jetty**, use `spring-boot-starter-jetty` instead of the Undertow starter.
+Reload the project and rebuild — the same `/api/...` endpoints now run on Jetty.
 
-Options and when to pick them:
+Options and when to pick them (for Spring Boot 4):
 
 | Server | Notes |
 |--------|-------|
 | **Tomcat** (default) | Most battle-tested, best docs — keep unless you have a reason to change |
-| **Undertow** | Lightweight, low memory, high throughput — popular for microservices |
 | **Jetty** | Flexible embedding, strong WebSocket support |
+
+> **Note on Undertow:** in Spring Boot 2.x/3.x, Undertow was a third option
+> (`spring-boot-starter-undertow`). As of **Spring Boot 4.1.0 that starter is not
+> published** (it exists only up to `4.0.0-M1`), so Undertow is not an available
+> embedded server here — the choice is Tomcat or Jetty. Verify the current options for
+> your exact Boot version before choosing, since the supported set can change between
+> major versions.
 
 Things to watch (the small non-free part):
 - **Container-specific config doesn't carry over:** `server.tomcat.*` properties
-  become `server.jetty.*` / `server.undertow.*`. Generic ones (`server.port`,
-  `server.compression.*`) work on all of them.
-- **Container-specific code needs porting:** Tomcat `Valve`s, a
-  `TomcatServletWebServerFactory` customizer, or JSP (Undertow has no JSP). This app
-  uses none of those, so it would be a clean swap.
+  become `server.jetty.*`. Generic ones (`server.port`, `server.compression.*`) work
+  on both.
+- **Container-specific code needs porting:** Tomcat `Valve`s or a
+  `TomcatServletWebServerFactory` customizer. This app uses none of those, so it would
+  be a clean swap.
 - **Reactive apps differ:** a WebFlux (reactive) app defaults to **Netty** and swaps
   among the reactive server variants instead. `vog-demo` is servlet MVC, so the
-  Tomcat/Jetty/Undertow trio applies here.
+  Tomcat/Jetty options apply here.
 
 For most apps the performance difference is marginal — stay on Tomcat unless a
 specific requirement pushes you elsewhere.
@@ -338,6 +343,10 @@ This project already demonstrates the operations above:
   parent doesn't manage it — an example of the §6 "version management" rule.
 - **Test starters were added** for Boot 4's per-technology test slices
   (`spring-boot-starter-webmvc-test`, `spring-boot-starter-data-jpa-test`).
+- **A Boot 4-specific module was added** for the H2 web console
+  (`spring-boot-h2console`): in Boot 4 the console auto-configuration moved out of
+  `spring-boot-autoconfigure` into its own module, so `/h2-console` only works once
+  that dependency is present — another example of Boot 4's modularization.
 - **Configuration** lives in `src/main/resources/application.properties` (H2
   datasource, JPA, H2 console, Swagger path).
 
