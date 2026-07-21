@@ -476,7 +476,7 @@ sequenceDiagram
 | Backend won't start: "Port 8080 already in use" | Another process on 8080 | Stop it, or set `server.port=8081` in `application.properties` |
 | `localhost:5173` → "This site can't be reached" / `ERR_CONNECTION_REFUSED` | The frontend dev server isn't running | Run `npm run dev` in `vog-web/` and keep that terminal open |
 | Startup log full of `Hibernate: insert...` — looks like errors | It's not — that's seed data + `show-sql` | Normal. Ready when you see `Started VogDemoApplication` |
-| Frontend shows "Failed to load data" | Backend not running, or CORS | Start the backend; it allows origin `http://localhost:5173` |
+| Frontend shows "Failed to load data" | Backend not running, or CORS | Start the backend; it allows origin `http://localhost:5173`. To pinpoint it, use the browser Network tab — see [`DEBUGGING-UI-DEVTOOLS.md`](DEBUGGING-UI-DEVTOOLS.md) |
 | `npm install` fails | Node too old | Use Node 18+ (`node -v`) |
 | Data disappeared after restart | H2 is in-memory | Expected — it reseeds on startup |
 

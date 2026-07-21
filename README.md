@@ -89,5 +89,7 @@ All docs live under [`vog-demo/docs/`](vog-demo/docs/):
 
 - **[SPRING-BOOT-DEV-GUIDE.md](vog-demo/docs/SPRING-BOOT-DEV-GUIDE.md)** — beginner Spring Boot guide: creating a project in VS Code, where Initializr settings live, adding libraries, changing the baseline.
 - **[TUTORIAL.md](vog-demo/docs/TUTORIAL.md)** — step-by-step run-through of this app.
+- **[DEBUGGING-UI-DEVTOOLS.md](vog-demo/docs/DEBUGGING-UI-DEVTOOLS.md)** — debug UI↔API calls with the browser Inspect/Network tab.
+- **[REAL-LIFE-EXAMPLE.md](vog-demo/docs/REAL-LIFE-EXAMPLE.md)** — how these fundamentals scale up in a production TELUS service.
 - **[ENVIRONMENT.md](vog-demo/docs/ENVIRONMENT.md)** — environment setup & Java version management.
 - See also [`vog-demo/README.md`](vog-demo/README.md) for backend details, API, and request-flow diagrams.
