@@ -125,6 +125,29 @@ vog-demo/
 - **`HELP.md`** and **`.vscode/NEWLY_CREATED_BY_SPRING_INITIALIZR`** — generated
   hints/markers; delete whenever you like.
 
+### From skeleton to endpoints — a few building blocks
+
+The generated skeleton runs but does nothing until you add endpoints. If you're new to
+the web layer, [`TUTORIAL.md`](TUTORIAL.md) Part 5 introduces it gently (endpoints, GET
+vs POST, path/query/body input, validation). Here are the two design choices worth
+understanding as you write real code — both visible in `vog-demo`:
+
+- **JSON in/out is automatic (serialization).** A controller method just returns a Java
+  object and Spring's Jackson library converts it to JSON; incoming JSON is converted
+  back into an object for `@RequestBody`. You don't write conversion code.
+- **Separate the API shape (DTO) from the stored shape (entity).** `vog-demo` receives
+  an `OrganismRequest` and returns an `OrganismResponse` (in `dto/`), distinct from the
+  `Organism` `@Entity`. This keeps your database structure from leaking into the public
+  API and lets each evolve independently. Starting out, returning the entity directly is
+  fine — the DTO split is the tidy next step.
+
+> **A serialization tip you'll likely hit.** If you deserialize JSON into a plain class
+> (POJO), Jackson needs a **no-argument constructor plus setters** to build it — a
+> missing no-arg constructor is a classic "cannot construct instance" error. `vog-demo`
+> sidesteps this by using **Java records** for its DTOs (e.g. `OrganismRequest`), which
+> Jackson fills through the record's canonical constructor — no no-arg constructor or
+> setters needed. Records are the modern, concise choice for DTOs.
+
 ---
 
 ## 6. Understanding `pom.xml` (the control panel)
@@ -238,14 +261,14 @@ block and reloading.
   container. For most modern apps, keep the default **jar** (self-contained,
   `java -jar target/vog-demo-0.0.1-SNAPSHOT.jar`).
 
-### Swap the embedded web server (Tomcat → Jetty / Undertow)
+### Swap the embedded web server (Tomcat → Jetty)
 Spring Boot runs an **embedded web server** inside the app. `spring-boot-starter-web`
 doesn't hard-wire it — it just *transitively* pulls in `spring-boot-starter-tomcat`,
 and Boot auto-configures whichever servlet container it finds on the classpath. So
 you can swap servers with a **`pom.xml` change and no code changes** in a typical
 app.
 
-Example — switch from Tomcat (default) to **Undertow**:
+Example — switch from Tomcat (default) to **Jetty**:
 ```xml
 <dependency>
   <groupId>org.springframework.boot</groupId>
@@ -259,30 +282,35 @@ Example — switch from Tomcat (default) to **Undertow**:
 </dependency>
 <dependency>
   <groupId>org.springframework.boot</groupId>
-  <artifactId>spring-boot-starter-undertow</artifactId>
+  <artifactId>spring-boot-starter-jetty</artifactId>
 </dependency>
 ```
-Reload the project and rebuild — the same `/api/...` endpoints now run on Undertow.
-For **Jetty**, use `spring-boot-starter-jetty` instead of the Undertow starter.
+Reload the project and rebuild — the same `/api/...` endpoints now run on Jetty.
 
-Options and when to pick them:
+Options and when to pick them (for Spring Boot 4):
 
 | Server | Notes |
 |--------|-------|
 | **Tomcat** (default) | Most battle-tested, best docs — keep unless you have a reason to change |
-| **Undertow** | Lightweight, low memory, high throughput — popular for microservices |
 | **Jetty** | Flexible embedding, strong WebSocket support |
+
+> **Note on Undertow:** in Spring Boot 2.x/3.x, Undertow was a third option
+> (`spring-boot-starter-undertow`). As of **Spring Boot 4.1.0 that starter is not
+> published** (it exists only up to `4.0.0-M1`), so Undertow is not an available
+> embedded server here — the choice is Tomcat or Jetty. Verify the current options for
+> your exact Boot version before choosing, since the supported set can change between
+> major versions.
 
 Things to watch (the small non-free part):
 - **Container-specific config doesn't carry over:** `server.tomcat.*` properties
-  become `server.jetty.*` / `server.undertow.*`. Generic ones (`server.port`,
-  `server.compression.*`) work on all of them.
-- **Container-specific code needs porting:** Tomcat `Valve`s, a
-  `TomcatServletWebServerFactory` customizer, or JSP (Undertow has no JSP). This app
-  uses none of those, so it would be a clean swap.
+  become `server.jetty.*`. Generic ones (`server.port`, `server.compression.*`) work
+  on both.
+- **Container-specific code needs porting:** Tomcat `Valve`s or a
+  `TomcatServletWebServerFactory` customizer. This app uses none of those, so it would
+  be a clean swap.
 - **Reactive apps differ:** a WebFlux (reactive) app defaults to **Netty** and swaps
   among the reactive server variants instead. `vog-demo` is servlet MVC, so the
-  Tomcat/Jetty/Undertow trio applies here.
+  Tomcat/Jetty options apply here.
 
 For most apps the performance difference is marginal — stay on Tomcat unless a
 specific requirement pushes you elsewhere.
@@ -315,6 +343,10 @@ This project already demonstrates the operations above:
   parent doesn't manage it — an example of the §6 "version management" rule.
 - **Test starters were added** for Boot 4's per-technology test slices
   (`spring-boot-starter-webmvc-test`, `spring-boot-starter-data-jpa-test`).
+- **A Boot 4-specific module was added** for the H2 web console
+  (`spring-boot-h2console`): in Boot 4 the console auto-configuration moved out of
+  `spring-boot-autoconfigure` into its own module, so `/h2-console` only works once
+  that dependency is present — another example of Boot 4's modularization.
 - **Configuration** lives in `src/main/resources/application.properties` (H2
   datasource, JPA, H2 console, Swagger path).
 

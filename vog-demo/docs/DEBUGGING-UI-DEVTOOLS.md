@@ -186,13 +186,16 @@ requests, handles XML namespaces/envelopes, WS-Security, and mocking — things 
 clients don't do well. Postman can do basic SOAP too, but SoapUI is purpose-built.
 Pick this when: the service you're calling is SOAP, not REST.
 
-### Built-in to this app — Swagger UI & Actuator
-- **Swagger UI** (`/swagger-ui.html`) — try endpoints interactively with zero setup
-  (see [`TUTORIAL.md`](TUTORIAL.md) §6.5). Great first stop for the backend.
-- **Spring Boot Actuator** — add `spring-boot-starter-actuator` to expose operational
-  endpoints like `/actuator/health`, `/actuator/metrics`, `/actuator/httpexchanges`,
-  and `/actuator/loggers` (change log levels at runtime). This is the bridge between
-  local debugging and production monitoring.
+### Backend-side — Swagger UI (built in) and Actuator (opt-in)
+- **Swagger UI** (`/swagger-ui.html`) — **already included** in `vog-demo`; try
+  endpoints interactively with zero setup (see [`TUTORIAL.md`](TUTORIAL.md) §6.5).
+  Great first stop for the backend.
+- **Spring Boot Actuator** — **not currently in `vog-demo`**; add
+  `spring-boot-starter-actuator` to get operational endpoints. By default only
+  `/actuator/health` is exposed over HTTP; expose more (e.g. `/actuator/metrics`,
+  `/actuator/loggers` for changing log levels at runtime) by setting
+  `management.endpoints.web.exposure.include` in `application.properties`. This is the
+  bridge between local debugging and production monitoring.
 
 ### Server-side logs
 Don't forget the backend's own output. `vog-demo` runs with `spring.jpa.show-sql=true`
