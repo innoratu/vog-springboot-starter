@@ -1,0 +1,13 @@
+flowchart TD
+    A[Browser] -->|HTTP| B[Embedded Tomcat server]
+    B --> C[DispatcherServlet<br/>routes the request]
+    C --> D[CORS filter]
+    D --> E["@RestController method"]
+    E -->|calls| F["@Service (business rules)"]
+    F -->|calls| G["Repository (Spring Data JPA)"]
+    G -->|SQL| H[(Database)]
+    H --> G --> F --> E
+    E -->|Java object| I[Jackson converts to JSON]
+    I --> C --> B -->|HTTP response| A
+    E -.error.-> J["@RestControllerAdvice<br/>builds a clean error JSON"]
+    J --> I

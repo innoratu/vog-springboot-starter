@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant UI as React (vog-web)
+    participant CO as OrganismController
+    participant SV as OrganismService
+    participant CR as CategoryRepository
+    participant OR as OrganismRepository
+    participant DB as H2 database
+
+    UI->>CO: POST /api/organisms {commonName, categoryId}
+    Note over CO: JSON parsed + @Valid checks required fields
+    alt missing required field
+        CO-->>UI: 400 (validation error JSON)
+    else valid
+        CO->>SV: create(request)
+        SV->>CR: does category exist?
+        alt no
+            SV-->>UI: 404 (category not found)
+        else yes
+            SV->>OR: save(organism)
+            OR->>DB: INSERT
+            DB-->>OR: saved row
+            OR-->>SV: Organism
+            SV-->>CO: OrganismResponse
+            CO-->>UI: 201 Created + JSON
+        end
+    end

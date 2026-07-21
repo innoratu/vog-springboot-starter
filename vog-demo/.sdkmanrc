@@ -1,0 +1,3 @@
+# Auto-switch Java when entering this directory (sdk env)
+# Enable auto-switching once with: sdk config  ->  sdkman_auto_env=true
+java=17.0.19-tem
