@@ -238,6 +238,55 @@ block and reloading.
   container. For most modern apps, keep the default **jar** (self-contained,
   `java -jar target/vog-demo-0.0.1-SNAPSHOT.jar`).
 
+### Swap the embedded web server (Tomcat → Jetty / Undertow)
+Spring Boot runs an **embedded web server** inside the app. `spring-boot-starter-web`
+doesn't hard-wire it — it just *transitively* pulls in `spring-boot-starter-tomcat`,
+and Boot auto-configures whichever servlet container it finds on the classpath. So
+you can swap servers with a **`pom.xml` change and no code changes** in a typical
+app.
+
+Example — switch from Tomcat (default) to **Undertow**:
+```xml
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-web</artifactId>
+  <exclusions>
+    <exclusion>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-tomcat</artifactId>
+    </exclusion>
+  </exclusions>
+</dependency>
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-undertow</artifactId>
+</dependency>
+```
+Reload the project and rebuild — the same `/api/...` endpoints now run on Undertow.
+For **Jetty**, use `spring-boot-starter-jetty` instead of the Undertow starter.
+
+Options and when to pick them:
+
+| Server | Notes |
+|--------|-------|
+| **Tomcat** (default) | Most battle-tested, best docs — keep unless you have a reason to change |
+| **Undertow** | Lightweight, low memory, high throughput — popular for microservices |
+| **Jetty** | Flexible embedding, strong WebSocket support |
+
+Things to watch (the small non-free part):
+- **Container-specific config doesn't carry over:** `server.tomcat.*` properties
+  become `server.jetty.*` / `server.undertow.*`. Generic ones (`server.port`,
+  `server.compression.*`) work on all of them.
+- **Container-specific code needs porting:** Tomcat `Valve`s, a
+  `TomcatServletWebServerFactory` customizer, or JSP (Undertow has no JSP). This app
+  uses none of those, so it would be a clean swap.
+- **Reactive apps differ:** a WebFlux (reactive) app defaults to **Netty** and swaps
+  among the reactive server variants instead. `vog-demo` is servlet MVC, so the
+  Tomcat/Jetty/Undertow trio applies here.
+
+For most apps the performance difference is marginal — stay on Tomcat unless a
+specific requirement pushes you elsewhere.
+
 ---
 
 ## 9. Running and debugging in VS Code
