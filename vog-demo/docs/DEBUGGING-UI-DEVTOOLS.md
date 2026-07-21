@@ -159,7 +159,9 @@ Desktop apps for crafting and saving HTTP requests. Best when you want to test t
 **backend directly**, without going through the React app.
 - **Import the API instantly:** point them at this app's OpenAPI spec
   (`http://localhost:8080/v3/api-docs`) to auto-generate a collection of every
-  endpoint. (See "Reading the API docs offline" in [`../README.md`](../README.md).)
+  endpoint. Only the backend needs to be running — not the React UI. Step-by-step
+  click-path: see the "Walkthrough: generate a Postman collection" section in
+  [`../README.md`](../README.md).
 - **Save requests & environments:** keep a collection of common calls; switch a
   base-URL variable between local / test / prod.
 - **Test scripts & automation:** Postman/Newman and Bruno can run request suites in
