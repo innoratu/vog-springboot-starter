@@ -140,6 +140,38 @@ runs. This is a common way to publish/share API docs.
 Load `openapi.json` into **Postman, Insomnia, or Bruno** to get a ready-made
 collection of all endpoints you can browse and call offline.
 
+#### Walkthrough: generate a Postman collection
+
+You only need the **backend** running (`./mvnw spring-boot:run`) — the React UI
+is not involved. Postman talks to the API directly, exactly like the browser's
+`fetch` calls do (and since it's not a browser, CORS never applies).
+
+1. In Postman click **Import** (top-left).
+2. Paste `http://localhost:8080/v3/api-docs` (or drop in an exported
+   `openapi.json` — then even the backend can be down for this step).
+3. Postman detects it as OpenAPI 3. Choose to import it as a
+   **Postman Collection**, then click **Import**.
+4. You get a collection with a folder per controller (categories, organisms)
+   and one saved request per operation — method, URL, path/query parameters,
+   and JSON request bodies pre-filled from the schemas.
+
+Useful to know:
+
+- **Sample values are placeholders.** Generated bodies look like
+  `{"commonName": "<string>"}` because the DTOs carry no example annotations.
+  If you want realistic samples in Postman *and* Swagger UI, add
+  `@Schema(example = "Clownfish")` to the DTO fields — both tools read it from
+  the same spec.
+- **`{{baseUrl}}` variable.** The import creates a collection variable pointing
+  at `http://localhost:8080`. Later you can duplicate it into Postman
+  *environments* (local / test / prod) and switch without editing requests.
+- **Browsing vs. sending.** The imported collection is readable offline, but
+  actually *sending* a request needs the backend up. The UI (`npm run dev`)
+  stays irrelevant either way.
+- **Re-import after API changes.** The collection is a snapshot of the spec;
+  when you add or change endpoints, import again (Postman offers to replace or
+  copy the collection).
+
 ### 5. Publish to an API catalog / portal
 In larger orgs the exported spec is pushed to **SwaggerHub, Backstage, or an
 internal API portal** so consumers discover and read it centrally, independent of
