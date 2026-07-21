@@ -242,6 +242,48 @@ Two more ideas:
 - **Annotations** (the `@Something` labels): they tell Spring how to treat a class
   or method — `@RestController`, `@Service`, `@GetMapping`, `@Valid`, etc.
 
+### Anatomy of an endpoint (building up, one idea at a time)
+
+Let's build up how the controller layer works, starting from the smallest idea.
+
+1. **An endpoint = a URL + an HTTP verb the app answers.** You create one by writing a
+   method in a controller and putting a *mapping* annotation on it. In
+   `controller/OrganismController.java`, `@GetMapping` on a method under
+   `@RequestMapping("/api/organisms")` creates `GET /api/organisms`.
+
+2. **The verb says what kind of action it is.** The four you'll see:
+   - **GET** — *read* data (`@GetMapping`)
+   - **POST** — *create* something new (`@PostMapping`)
+   - **PUT** — *update* an existing thing (`@PutMapping`)
+   - **DELETE** — *remove* it (`@DeleteMapping`)
+
+3. **Returning data → JSON, for free.** The method just returns a Java object; Spring
+   converts it to **JSON** (the text format APIs speak) automatically. Turning an object
+   into text like that is called **serialization**. So `get(...)` returning an
+   `OrganismResponse` becomes a JSON object in the HTTP response — you write no
+   conversion code.
+
+4. **Where the incoming data comes from — three sources:**
+   - **Part of the path** → `@PathVariable`. `GET /api/organisms/{id}` captures the id
+     into `@PathVariable Long id`.
+   - **After the `?` (query string)** → `@RequestParam`. `GET /api/organisms?categoryId=1`
+     captures it into `@RequestParam Long categoryId` (used here for filtering).
+   - **The request body (for POST/PUT)** → `@RequestBody`. The JSON the client sends is
+     read (**deserialized**) into an object, e.g. `create(@RequestBody OrganismRequest ...)`.
+
+5. **Checking the input → validation.** The `@Valid` label on that `@RequestBody` runs
+   the rules declared on the object (like `@NotBlank` on `commonName`). Bad input is
+   rejected with a clear **400** before your logic runs — see `dto/OrganismRequest.java`.
+
+6. **A small but useful detail — the request/response *shape* is a DTO, not the entity.**
+   The controller receives an `OrganismRequest` and returns an `OrganismResponse`
+   (in `dto/`), separate from the `Organism` entity that's stored. This keeps the
+   database shape from leaking into your public API. (Starting out, one class is fine;
+   the DTO split is the tidy next step — the `SPRING-BOOT-DEV-GUIDE.md` goes deeper.)
+
+That's the whole request path: verb + URL → read input (path/query/body) → validate →
+call the service → return an object that Spring serializes to JSON.
+
 That's enough to understand everything in this app.
 
 ---

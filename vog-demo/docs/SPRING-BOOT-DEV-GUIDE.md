@@ -125,6 +125,29 @@ vog-demo/
 - **`HELP.md`** and **`.vscode/NEWLY_CREATED_BY_SPRING_INITIALIZR`** — generated
   hints/markers; delete whenever you like.
 
+### From skeleton to endpoints — a few building blocks
+
+The generated skeleton runs but does nothing until you add endpoints. If you're new to
+the web layer, [`TUTORIAL.md`](TUTORIAL.md) Part 5 introduces it gently (endpoints, GET
+vs POST, path/query/body input, validation). Here are the two design choices worth
+understanding as you write real code — both visible in `vog-demo`:
+
+- **JSON in/out is automatic (serialization).** A controller method just returns a Java
+  object and Spring's Jackson library converts it to JSON; incoming JSON is converted
+  back into an object for `@RequestBody`. You don't write conversion code.
+- **Separate the API shape (DTO) from the stored shape (entity).** `vog-demo` receives
+  an `OrganismRequest` and returns an `OrganismResponse` (in `dto/`), distinct from the
+  `Organism` `@Entity`. This keeps your database structure from leaking into the public
+  API and lets each evolve independently. Starting out, returning the entity directly is
+  fine — the DTO split is the tidy next step.
+
+> **A serialization tip you'll likely hit.** If you deserialize JSON into a plain class
+> (POJO), Jackson needs a **no-argument constructor plus setters** to build it — a
+> missing no-arg constructor is a classic "cannot construct instance" error. `vog-demo`
+> sidesteps this by using **Java records** for its DTOs (e.g. `OrganismRequest`), which
+> Jackson fills through the record's canonical constructor — no no-arg constructor or
+> setters needed. Records are the modern, concise choice for DTOs.
+
 ---
 
 ## 6. Understanding `pom.xml` (the control panel)
