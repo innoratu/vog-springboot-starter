@@ -217,6 +217,23 @@ down the layers and the response travels back up:
 4. **Entity** (`@Entity`) — a plain Java class that maps to a database table
    (`Category`, `Organism`).
 
+> **A note on that data-access folder's name — `repository/` vs `dao/`.** This layer
+> has two common names, and they mean the same architectural thing (isolate "how we
+> reach the data" from business logic). What drives the choice is **how** you access
+> data:
+> - **`repository/`** — the term Spring Data uses. When you extend `JpaRepository`,
+>   Spring **auto-generates** the implementation from your method names, so there's no
+>   class to write. This app uses that, hence `repository/`.
+> - **`dao/`** (Data Access Object) — the classic name, typically used when you
+>   **hand-write** the access code: raw JDBC with manual row mapping, or a client to a
+>   SOAP/REST service (no Spring Data magic available).
+>
+> So a JPA-backed app tends to have `repository/`; an app talking to legacy JDBC or a
+> SOAP/REST backend tends to have `dao/` (sometimes split further, e.g. `dao/jaxws`
+> for a SOAP client and `dao/repo` for JDBC). Some teams call JPA interfaces `dao/`
+> too — it's a convention; consistency within a project matters more than the word.
+> See [`REAL-LIFE-EXAMPLE.md`](REAL-LIFE-EXAMPLE.md) for a service that uses `dao/`.
+
 Two more ideas:
 
 - **Dependency Injection (DI):** you never write `new OrganismService()`. A class
