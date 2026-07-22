@@ -515,6 +515,7 @@ sequenceDiagram
 | `java -version` shows 8 or 11 | Wrong Java active | `sdk use java 17.0.19-tem`, then `hash -r` |
 | `sdk: command not found` | SDKMAN not loaded | `source "$HOME/.sdkman/bin/sdkman-init.sh"` |
 | `release version 17 not supported` during build | Maven ran on old Java | Activate Java 17, confirm with `./mvnw -version` |
+| `spring-boot:run` fails: `UnsupportedClassVersionError ... class file version 61.0 ... up to 52.0` | Maven is running on Java 8 (61.0=Java 17, 52.0=Java 8); you didn't activate Java 17 in this terminal | `sdk env` (or `sdk use java 17.0.19-tem`), then `hash -r`, then re-run |
 | Backend won't start: "Port 8080 already in use" | Another process on 8080 | Stop it, or set `server.port=8081` in `application.properties` |
 | `localhost:5173` → "This site can't be reached" / `ERR_CONNECTION_REFUSED` | The frontend dev server isn't running | Run `npm run dev` in `vog-web/` and keep that terminal open |
 | Startup log full of `Hibernate: insert...` — looks like errors | It's not — that's seed data + `show-sql` | Normal. Ready when you see `Started VogDemoApplication` |
