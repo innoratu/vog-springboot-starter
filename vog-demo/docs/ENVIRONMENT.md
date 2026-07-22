@@ -73,6 +73,23 @@ Currently installed on this machine:
 17.0.19-tem   <-- required by vog-demo
 ```
 
+### What "activating" a Java version actually does
+
+Activating (via `sdk env` or `sdk use`) doesn't install anything — it rewires two
+environment variables **in the current shell only**:
+- **`PATH`** — puts the chosen JDK's `bin` first, so `java` (and what `./mvnw` runs)
+  resolves to that version instead of the default.
+- **`JAVA_HOME`** — points at the chosen JDK, which build tools also read.
+
+Key consequences:
+- It's **per-shell and temporary** — a new terminal starts on the global default again
+  (unless you enable auto-env, §5, or set a global default).
+- `sdk env` reads the version from the project's `.sdkmanrc`; `sdk use` takes the
+  version you name.
+- `./mvnw` launches Maven with whatever `java` is on `PATH`; Maven then loads the
+  Spring Boot 4.1.0 plugin, which is **compiled for Java 17**. If `PATH` still points
+  at Java 8, the plugin can't load — see the `UnsupportedClassVersionError` row in §6.
+
 ### Switch Java — three scopes
 
 | Command | Scope | Use when |
@@ -123,4 +140,5 @@ manual step, and your Java 8/11 projects are never disturbed.
 | `java -version` shows 1.8 or 11 | Wrong JDK active | `sdk use java 17.0.19-tem` then `hash -r` |
 | `sdk: command not found` | SDKMAN not loaded in this shell | `source "$HOME/.sdkman/bin/sdkman-init.sh"` |
 | Build fails with "release version 17 not supported" | Maven running on old Java | Ensure Java 17 active, then `./mvnw -version` should show Java 17 |
+| `spring-boot:run` fails: `UnsupportedClassVersionError ... RunMojo ... class file version 61.0 ... only ... up to 52.0` | Maven is running on **Java 8** (61.0=Java 17, 52.0=Java 8); the Boot 4 plugin needs Java 17 | Activate Java 17 first: `sdk env` (or `sdk use java 17.0.19-tem`), then `hash -r`, confirm `java -version`, then re-run |
 | `./mvnw` permission denied | Wrapper not executable | `chmod +x mvnw` |

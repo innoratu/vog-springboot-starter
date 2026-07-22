@@ -319,11 +319,19 @@ specific requirement pushes you elsewhere.
 
 ## 9. Running and debugging in VS Code
 
+> **Before any `./mvnw` command, activate Java 17 in that terminal** — `./mvnw` runs
+> Maven with whatever `java` is on your `PATH`, and the Spring Boot 4.1.0 plugin needs
+> Java 17. From `vog-demo/`: `sdk env` (or `sdk use java 17.0.19-tem`), then `hash -r`,
+> then `java -version` should show 17. If you skip this on a machine whose default is
+> Java 8, `spring-boot:run` fails with `UnsupportedClassVersionError ... class file
+> version 61.0 ... up to 52.0`. See [`ENVIRONMENT.md`](ENVIRONMENT.md). In VS Code,
+> run/debug from the Spring Boot Dashboard instead and it uses the project's JDK.
+
 - **Spring Boot Dashboard** (left activity bar): lists your apps. Click ▶ to run,
   ■ to stop, or the bug icon to debug. It also shows live **beans** and **request
   mappings** once running.
-- **Terminal equivalent:** `./mvnw spring-boot:run`.
-- **Package a runnable jar:** `./mvnw clean package` → `target/*.jar` →
+- **Terminal equivalent:** `sdk env && ./mvnw spring-boot:run`.
+- **Package a runnable jar:** `sdk env && ./mvnw clean package` → `target/*.jar` →
   `java -jar target/vog-demo-0.0.1-SNAPSHOT.jar`.
 - Edit `application.properties` with Spring Boot Tools active — you get
   autocompletion and docs for every property.
