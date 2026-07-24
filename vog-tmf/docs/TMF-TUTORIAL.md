@@ -1032,10 +1032,11 @@ schemas, useful for poking at endpoints without hand-typing curl.
 [running the automated tests](../../vog-demo/docs/TUTORIAL.md) (`./mvnw
 test`) and the layered idea behind them: many fast unit/slice tests at the
 bottom, fewer broader integration tests above that, fewer still full
-end-to-end tests at the top. `vog-tmf` follows the same shape — 43 tests
+end-to-end tests at the top. `vog-tmf` follows the same shape — 44 tests
 today, almost all of them fast Mockito-backed service tests and
-`@WebMvcTest` controller slices, with a handful of `@DataJpaTest` and one
-full `@SpringBootTest` for the seeding check.
+`@WebMvcTest` controller slices, with a handful of `@DataJpaTest` and two
+full `@SpringBootTest` classes: one proving the application context loads at
+all, and one proving `DataSeeder` actually runs inside it.
 
 ### The frameworks, one line each
 
@@ -1066,7 +1067,7 @@ concepts from Parts 1–3 map onto real test methods in `vog-tmf`:
 | Self-referencing parent + `@UpdateTimestamp` | `CategoryRepositoryTest.savesSelfReferencingParentAndAutoStampsLastUpdate` |
 | Adapter: downstream unreachable → `DownstreamUnavailableException` | `LegacyCatalogClientTest.fetchCategories_connectionFailure_throwsDownstreamUnavailable`, using `MockRestServiceServer` + `withException(new IOException(...))` to simulate the connection failure without a real network call |
 | Adapter: that exception becomes a TMF `503` | `LegacyCategoryAdapterControllerTest.list_downstreamDown_returns503TmfError` |
-| Seed data shape (3 categories / 2 specs / 4 offerings) | `DataSeederTest.seedsCatalogOnStartup` — the one full `@SpringBootTest` in the suite |
+| Seed data shape (3 categories / 2 specs / 4 offerings) | `DataSeederTest.seedsCatalogOnStartup` — one of the suite's two full `@SpringBootTest` classes |
 
 ### Best practices worth calling out
 
@@ -1086,8 +1087,9 @@ concepts from Parts 1–3 map onto real test methods in `vog-tmf`:
   for why Boot 4 moved these annotations into their own starters
   (`spring-boot-starter-webmvc-test`, `spring-boot-starter-data-jpa-test`,
   both present in `vog-tmf`'s `pom.xml`). `@SpringBootTest` is reserved for
-  the one place a real context earns its cost: proving `DataSeeder` actually
-  runs on startup.
+  the couple of places a real context earns its cost: a bare smoke test that
+  the application boots at all (`VogTmfApplicationTests`), and proving
+  `DataSeeder` actually runs on startup (`DataSeederTest`).
 - **Deterministic test data — never rely on `DataSeeder`.** Every service
   and controller test builds its own fixtures (`saved(...)`, `tmf(...)`
   helper methods, Mockito stubs) rather than depending on what
@@ -1113,3 +1115,352 @@ implementation typically layers a few more tools on top:
   final rung: the official suite a vendor runs to get "TMF Open API
   Conformance Certified," checking the implementation against the spec
   itself rather than against hand-written expectations.
+
+---
+
+## Part 6 — Production best practice: contract-first
+
+Everything built so far was **code-first**: read the spec, then hand-write
+the entities, DTOs, and controllers that match it. That's a fine way to
+*learn* a TMF API — every line is something you typed and can explain — but
+it doesn't scale to a production-sized implementation of a spec with dozens
+of fields and endpoints, where a hand-typed field name that quietly drifts
+from the spec (`lifecyleStatus` for `lifecycleStatus`, say) isn't caught
+until conformance testing finds it. This part covers the alternative:
+**contract-first** — generating code straight from TM Forum's own spec file,
+so the computer, not a human transcribing a PDF, is what keeps your field
+names honest.
+
+### Code-first vs. contract-first
+
+| | Code-first (what this tutorial did) | Contract-first |
+|---|---|---|
+| Starting point | Your own reading of the spec | TM Forum's official OAS file, machine-read |
+| Field-name accuracy | As good as the person typing it | Guaranteed to match the spec (it's generated *from* the spec) |
+| Best for | Learning; a small, hand-picked slice of an API | A near-complete, production implementation of an API |
+| Cost | None up front; tedious at scale | Generator setup up front; near-zero per additional endpoint |
+
+### Getting the official spec
+
+TM Forum's OAS (**OpenAPI Specification**) files — the machine-readable YAML
+description of an API's resources, fields, and endpoints — live in the
+GitHub side of Part 0's two locations:
+**[github.com/tmforum-apis](https://github.com/tmforum-apis)** has one repo
+per API (`TMF620-ProductCatalog`, in this case), each containing its
+`.oas.yaml` file alongside a user guide and, for many APIs, a conformance
+profile. You'd download `TMF620-ProductCatalog-v4.oas.yaml` from there and
+commit it into your project (say,
+`src/main/resources/openapi/TMF620-ProductCatalog-v4.oas.yaml`) as the input
+to the generator below.
+
+### The `openapi-generator-maven-plugin`, line by line
+
+**This block is shown to explain the pattern — it is not wired into
+`vog-tmf`'s `pom.xml`, and running `./mvnw` won't invoke it.** Generating
+code for TMF620's full resource set (catalog, category, productOffering,
+productSpecification, productOfferingPrice, hub, importJob/exportJob, and
+every field on each) would produce far more generated volume than three
+hand-picked resources need for teaching the TMF630 patterns — it would bury
+the point of this tutorial under boilerplate. A production team implementing
+most or all of TMF620 would wire this in for real; here, it's explained so
+you recognize it and can adopt it later.
+
+```xml
+<plugin>
+    <groupId>org.openapitools</groupId>
+    <artifactId>openapi-generator-maven-plugin</artifactId>
+    <version>7.8.0</version>
+    <executions>
+        <execution>
+            <goals>
+                <goal>generate</goal>
+            </goals>
+            <configuration>
+                <inputSpec>${project.basedir}/src/main/resources/openapi/TMF620-ProductCatalog-v4.oas.yaml</inputSpec>
+                <generatorName>spring</generatorName>
+                <output>${project.build.directory}/generated-sources/openapi</output>
+                <apiPackage>com.vog.example.vog_tmf.generated.api</apiPackage>
+                <modelPackage>com.vog.example.vog_tmf.generated.model</modelPackage>
+                <configOptions>
+                    <interfaceOnly>true</interfaceOnly>
+                    <useSpringBoot3>true</useSpringBoot3>
+                    <skipDefaultInterface>false</skipDefaultInterface>
+                </configOptions>
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
+```
+
+One sentence per line:
+
+- **`groupId`/`artifactId`** — the [OpenAPI Generator](https://openapi-generator.tech/)
+  project's Maven plugin, the most widely used open-source code generator for
+  OpenAPI/Swagger specs.
+- **`version` `7.8.0`** — pin a specific 7.x release (a placeholder here —
+  check for the current 7.x release when you actually wire this in) so
+  builds are reproducible.
+- **`inputSpec`** — points at the OAS file you downloaded from
+  `tmforum-apis`, not a hand-maintained copy, so the generated code always
+  matches the real spec.
+- **`generatorName` `spring`** — tells the tool to emit Spring MVC-flavored
+  interfaces and Jackson-annotated model classes, rather than a generic Java
+  HTTP client or some other language's code.
+- **`output`** — a `generated-sources` directory under `target/`, kept out
+  of `src/`, so the generated code is regenerated fresh on every build
+  rather than hand-edited and drifting from the spec over time.
+- **`apiPackage`/`modelPackage`** — where the generated interfaces and model
+  classes land on your classpath, so you can import them like any other
+  package.
+- **`interfaceOnly=true`** — generate only the callable *interface*
+  (method signatures and their `@RequestMapping`-style annotations), not a
+  runnable controller class, so you still write the implementation instead
+  of the generator overwriting your business logic on every regeneration.
+- **`useSpringBoot3=true`** — selects the generator's Jakarta-namespace,
+  Spring Boot 3-and-later output shape; the flag's name hasn't caught up to
+  Spring Boot 4 yet, but Boot 4 continues the same `jakarta.*` package
+  lineage Boot 3 started, so it's still the correct setting here.
+- **`skipDefaultInterface=false`** — keeps a default method body on every
+  generated interface method (returning `501 Not Implemented`) instead of
+  forcing you to implement every endpoint before the project compiles, which
+  matters if you're adopting the spec one resource at a time rather than all
+  at once.
+
+### The delegate-implementation pattern
+
+Once the interface is generated, your own class implements it and delegates
+to the service layer you'd write regardless of code-first or contract-first
+— the same `CategoryService` from Part 3, unchanged:
+
+```java
+@RestController
+public class CategoryApiImpl implements CategoryApi {
+    private final CategoryService service;
+    public CategoryApiImpl(CategoryService service) { this.service = service; }
+    public ResponseEntity<Category> getCategoryById(String id) {
+        return ResponseEntity.ok(service.get(id));
+    }
+}
+```
+
+The generator owns the contract (method signatures, request/response
+types); you own the implementation. Regenerating after a spec update changes
+the interface, and the compiler tells you exactly which methods need
+updating — a hand-maintained code-first version has to notice the spec
+changed on its own.
+
+### When to choose which
+
+- **Green-field, spec-faithful product API** → contract-first. You're
+  implementing most of a real TM Forum API for real integration partners;
+  let the generator guarantee field-level accuracy.
+- **Learning, or a small, hand-picked slice for an internal app** →
+  code-first is fine. That's what `vog-tmf` is: three resources, chosen to
+  teach every TMF630 pattern once, read top-to-bottom without a generator in
+  the loop.
+
+Either way, the **TMF Conformance Test Kit (CTK)** — TM Forum's official
+per-API test suite, introduced in Part 0 — is the gate that actually proves
+conformance. Generating code from the OAS file makes drift *less likely*; it
+doesn't replace running the CTK, because the CTK also checks behavior (status
+codes, error shapes, lifecycle transitions) that a code generator has no way
+to enforce.
+
+### Versioning, briefly
+
+TMF APIs version at the **major** level, visible right in the URL — every
+path in this tutorial has carried `v4` (`/tmf-api/productCatalogManagement/v4/...`)
+since Part 1. The rule that makes that path segment meaningful: **a `v4`
+client must never break** — new optional fields can be added, but an
+existing field can't change meaning or disappear within the `v4` line; a
+breaking change earns a new major, `v5`, served alongside `v4` until
+consumers migrate. For versioning at the level of one *resource* rather than
+the whole API, TMF630 also defines **`@schemaLocation`** — an optional field
+some resources carry, pointing at the exact schema document that specific
+instance conforms to, useful when a resource's shape can evolve slightly
+faster than the API's own major version. `vog-tmf` doesn't populate it (all
+three resources are pinned to the one `v4` shape you've seen throughout this
+tutorial), but you'll see it in larger, longer-lived TMF implementations.
+
+---
+
+## Part 7 — Migrating existing and legacy apps to TMF: the playbook
+
+Building `vog-tmf` from scratch, Part 3 onward, is one path to a TMF API.
+The far more common one, in practice, is that you already have a working
+application — sometimes a modern Spring service, sometimes something much
+older — and the ask is "make this speak TMF." This part is that playbook,
+told for a specific, realistic estate: your target platform is **Google
+Cloud GKE** (Kubernetes), and your legacy estate includes **WebLogic-hosted
+Java/Maven applications** — pre-Spring, deployed as EAR/WAR files onto an
+application server, not as standalone containers. Everything below applies
+to any legacy system, but each step calls out what changes when "legacy"
+specifically means WebLogic.
+
+### Step 1 — Pick the API, and map the domain
+
+Start the same way Part 2's workflow diagram did: find the TM Forum Open
+API that matches the business domain you're exposing (the Open API table
+from Part 0). Then build a **mapping table** — one row per field, one column
+for what your existing system already has, one for the TMF field it becomes.
+Being honest about what *doesn't* map is as important as mapping what does.
+Here's that table for `vog-demo`'s legacy `Category` entity, mapped onto
+TMF620's `category` resource — exactly what `vog-tmf`'s adapter (below) had
+to decide:
+
+| `vog-demo` field | TMF620 `category` field | Notes |
+|---|---|---|
+| `Category.name` | `name` | Direct copy, no transformation needed. |
+| `Category.description` | `description` | Direct copy. |
+| *(none)* | `lifecycleStatus` | Legacy model has no status field at all — the adapter defaults every category to `"Active"`. |
+| *(none)* | `validFor` | Legacy model has no validity window — left unset. |
+| *(none)* | `@type` | Not stored anywhere legacy-side — the adapter sets the literal `"Category"`. |
+| *(none)* | `href` | Not stored — computed by the adapter from the id, the same way `CategoryTmf.from` does in Part 3. |
+| `Organism` (whole entity) | *(no TMF620 equivalent)* | **Out of scope, honestly.** `Organism` is a living-thing catalog entry, not a catalog/category/product concept — forcing it into TMF620 would be inventing a mapping that doesn't exist. Not every legacy concept has, or should have, a TMF equivalent. |
+
+### Step 2 — Gap analysis
+
+With the mapping table in hand, walk this checklist against the spec for
+every field/behavior that *does* map:
+
+- **Resource shape** — which TMF fields does the legacy system have, which
+  are missing (as above), and which does it have *extra* that TMF has no
+  place for?
+- **Verbs** — does the legacy system support a full-replace `PUT`, where
+  TMF wants `PATCH` with JSON Merge Patch (Part 1)? That's usually the
+  single biggest gap: most legacy CRUD APIs were built `PUT`-first.
+- **Error body** — does the legacy system's error shape resemble `TmfError`
+  (Part 1) at all, or is it a stack trace, a SOAP fault, or a home-grown
+  shape that needs translating?
+- **Lifecycle semantics** — does the legacy system track anything like
+  `lifecycleStatus`, or is "active vs. retired" implicit (a boolean flag, a
+  deleted-row convention, nothing at all)?
+- **Ids** — TMF ids are always strings on the wire, even when the source of
+  truth is a numeric primary key (Part 1's envelope) — confirm the legacy
+  system's ids convert cleanly.
+- **Security** — does the legacy system's auth mechanism (a session cookie,
+  a WebLogic-managed SAML/SSO context, a shared secret) map onto whatever
+  the new TMF-facing endpoint needs to enforce, or does a translation layer
+  need to sit in between?
+
+### Step 3 — Choose a strategy by how much you can change the system
+
+Not every legacy system can be freely rewritten, and the right strategy
+depends entirely on how much freedom you actually have:
+
+| Strategy | What it is | Choose when | Your estate |
+|---|---|---|---|
+| **Facade/adapter** | A new, separate TMF-shaped service sits in front of the legacy system and calls its existing interfaces, unmodified. | You can't freely redeploy or restructure the legacy system. | A WebLogic app you can't redeploy on a whim: stand up a facade container on **GKE** that calls WebLogic's existing interfaces read-only (or read/write, once proven) — WebLogic stays exactly where it is, untouched. If those existing interfaces are SOAP or EJB-era (common on WebLogic), the adapter also does **protocol** translation, not just shape translation — REST-in, SOAP/EJB-out. |
+| **In-place retrofit** | TMF controllers are added directly inside the existing app, alongside whatever it already exposes. | The app is already Spring-based, containerized, and under active development. | A Spring service already running on GKE: add a `controller`/`dto` package the same way `vog-tmf` did in Part 3 — no new deployable needed. |
+| **Strangler** | Facade first; then, incrementally, real capability moves out of the legacy system and into the new TMF-shaped service, piece by piece, until the legacy system does nothing at all. | The long-term target, whenever the legacy system will eventually retire. | Begin exactly like the WebLogic facade above, then migrate one capability at a time out of WebLogic into GKE-hosted services until WebLogic is fully decommissioned — the proven end state for a WebLogic → GKE modernization. |
+
+One rule applies regardless of which strategy you pick: **never fork the
+legacy codebase to bolt TMF controllers directly into a WebLogic
+application.** Put the new face in a *new*, separately deployable service.
+WebLogic deployments are typically slow, risky, and shared across other
+applications on the same server — the facade/adapter and strangler
+strategies both exist specifically so a TMF migration never requires a
+WebLogic redeploy at all.
+
+### Step 4 — Prove conformance and cut over
+
+However you built it, the cutover sequence is the same:
+
+1. Run the **CTK** (Part 6) against the new TMF-shaped endpoint, whichever
+   strategy produced it.
+2. Expose it behind your API gateway, `/v4` in the path (Part 6's
+   versioning rule).
+3. Migrate consumers to the gateway route, one at a time.
+4. Keep the legacy route alive until traffic to it is actually zero, then
+   retire it — don't delete the old path the moment the new one exists.
+
+### The first three concrete steps for a WebLogic/Maven app
+
+Distilled to just the beginning — if you're staring at a WebLogic-hosted
+Java/Maven app right now and need to know where to start:
+
+1. **Pick the TMF API and write the mapping table** (Step 1) — including
+   the honest "doesn't map" rows, the way `Organism` doesn't map onto
+   TMF620.
+2. **Stand up a Spring Boot facade container on GKE that calls the
+   WebLogic app's existing interfaces, read-only** — exactly what
+   `vog-tmf`'s `legacyCategory` adapter does against `vog-demo` below, just
+   with a WebLogic backend (and, likely, a protocol translation step) in
+   place of `vog-demo`'s plain REST.
+3. **Run the CTK against the facade and iterate** — fix whatever gaps it
+   finds, and only add write operations once reads are solid, all without
+   touching WebLogic itself.
+
+### Worked example: the adapter, as Step 3's strategy, built
+
+This repo can't run WebLogic, so `vog-tmf`'s adapter package plays out the
+**facade/adapter** strategy from Step 3 against `vog-demo` standing in for
+"the legacy app" — same idea, plain REST instead of SOAP/EJB. Three files,
+already covered in Parts 3–4:
+
+- **`LegacyCategory`** (`adapter/LegacyCategory.java`) — a small record
+  shaped like `vog-demo`'s `CategoryResponse`: this *is* the mapping table
+  from Step 1, expressed as a Java type.
+- **`LegacyCatalogClient`** (`adapter/LegacyCatalogClient.java`) — calls
+  `vog-demo`'s existing `/api/categories` endpoints over plain HTTP via
+  Spring's `RestClient`, unmodified on `vog-demo`'s side; a downstream
+  failure (connection refused, timeout) is caught and re-thrown as
+  `DownstreamUnavailableException` rather than leaking a raw I/O exception.
+- **`LegacyCategoryAdapterController`** (`adapter/LegacyCategoryAdapterController.java`)
+  — the new TMF-shaped face: it maps `LegacyCategory` onto `CategoryTmf`
+  (Step 1's table, applied), filling `lifecycleStatus`/`isRoot` with the
+  defaults the mapping table calls out, and lets a `DownstreamUnavailableException`
+  become the TMF `503` you saw in Part 4.
+
+Part 4's walkthrough item 8 is this adapter running end to end: categories
+coming back TMF-shaped while `vog-demo` is up, and a clean TMF `503` error
+body — not a stack trace — the moment `vog-demo` (standing in for the
+legacy system) goes down. That's the facade/adapter strategy, end to end, in
+miniature.
+
+---
+
+## Part 8 — Glossary and where to next
+
+### Glossary
+
+Every TMF-specific term used in this tutorial, in one place:
+
+| Term | Meaning |
+|---|---|
+| **TM Forum** | The global telecom-industry association that publishes the Open API standards this tutorial follows (Part 0). |
+| **Open API** (TM Forum sense) | A published, versioned REST contract for one business domain, so any implementer is interoperable with any other (Part 0). |
+| **TMF620** | The Product Catalog Management Open API — the business domain `vog-tmf` implements (Part 2). |
+| **TMF630** | The REST API Design Guidelines — the shared grammar (envelope, errors, verbs, filtering) every TM Forum Open API is written in (Part 1). |
+| **ODA (Open Digital Architecture)** | TM Forum's reference architecture: reusable, Open-API-exposed "Components" a telecom's IT estate assembles from (Part 0). |
+| **Resource envelope** | The `id`/`href`/`@type` wrapper every TMF resource carries, answering "who am I, what kind of thing am I" (Part 1). |
+| **`href`** | The full, dereferenceable URL for one exact resource instance (Part 1). |
+| **`@type`** | A resource's TMF type name (`Category`, `ProductOffering`, …), carried on the resource itself (Part 1). |
+| **`@referredType`** | The same idea as `@type`, but on a *reference* (a `*Ref` shape, Part 3) — the type name of the resource being pointed at, not the resource itself. |
+| **`lifecycleStatus`** | A resource's standardized position in its life (`In study` … `Launched` … `Obsolete`), Part 1's table. |
+| **`validFor`** | A reusable start/end validity window attached to most resources (Part 1). |
+| **JSON Merge Patch** | RFC 7386 — the `PATCH` body semantics TMF630 mandates instead of `PUT`: absent = untouched, value = replaced, explicit `null` = cleared (Part 1). |
+| **Partial response** | The `?fields=` convention: ask for only the fields you need, envelope always included regardless (Part 1). |
+| **CTK (Conformance Test Kit)** | TM Forum's official test suite, distributed per API, that a vendor runs to get "TMF Open API Conformance Certified" (Part 0, Part 6). |
+| **Facade/adapter** | A new, separate service that fronts an existing system over its current interfaces, translating shape (and sometimes protocol) without modifying it (Part 7). |
+| **Strangler (migration)** | Facade first, then incrementally moving real capability out of the legacy system until nothing is left to strangle (Part 7). |
+
+### Where to next
+
+- **[TMF632 — Party Management](https://github.com/tmforum-apis)** — the
+  Open API for parties: customers, organizations, and the individuals/roles
+  associated with them. A natural next domain once catalog is in place —
+  most orders and offerings eventually need to reference *who* they're for.
+- **[TMF641 — Service Ordering](https://github.com/tmforum-apis)** — ordering
+  of the underlying network/technical services a `productOffering` is built
+  from, distinct from TMF622 Product Ordering (the customer-facing order);
+  the same TMF630 grammar from Part 1 applies again.
+- **[ODA (Open Digital Architecture)](https://www.tmforum.org/oda/open-apis/)**
+  — Part 0's reference architecture, worth a second look once you've built
+  one real Open API and want to see how many such contracts fit together.
+- Back in this repository: [`vog-demo/docs/TUTORIAL.md`](../../vog-demo/docs/TUTORIAL.md)
+  (the first tutorial this one continues from),
+  [`vog-demo/docs/SPRING-BOOT-DEV-GUIDE.md`](../../vog-demo/docs/SPRING-BOOT-DEV-GUIDE.md)
+  (Spring Boot concepts referenced throughout), and
+  [`vog-demo/docs/ENVIRONMENT.md`](../../vog-demo/docs/ENVIRONMENT.md) (Java/SDKMAN
+  setup both projects share).
