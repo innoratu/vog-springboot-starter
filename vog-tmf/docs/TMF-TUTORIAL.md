@@ -833,7 +833,7 @@ HTTP/1.1 201
 Location: /tmf-api/productCatalogManagement/v4/category/5
 
 {"id":"5","href":".../category/5","@type":"Category","name":"Mobile Postpaid",
- "description":"Postpaid mobile plans","lifecycleStatus":"In study","isRoot":true,
+ "description":"Postpaid mobile plans","lifecycleStatus":"In study","isRoot":false,
  "parentId":"1", ...}
 ```
 
@@ -851,20 +851,18 @@ $ curl -s $BASE/category/5 | jq
   "name": "Mobile Postpaid",
   "description": "Postpaid mobile plans",
   "lifecycleStatus": "In study",
-  "isRoot": true,
+  "isRoot": false,
   "parentId": "1",
   "lastUpdate": "2026-07-24T17:16:13.779695Z"
 }
 ```
 
 That's the `ParentCat -->|parentId| ChildCat` edge from Part 2's diagram, made
-real. **One thing worth noticing:** `isRoot` is still `true` here even
-though `parentId` is set — `CategoryService.create` defaults `isRoot`
-independently of whether a `parentId` was given (it only looks at whether
-*you* explicitly passed `isRoot` in the request body). For this tutorial's
-scope that's a harmless default, but it does mean the two fields can end up
-telling slightly different stories about the same category unless a caller
-sets `isRoot` explicitly — worth keeping in mind if you extend this slice.
+real. **One thing worth noticing:** `isRoot` comes back `false` here even
+though you never set it — `CategoryService.create` derives `isRoot` from
+whether a `parentId` was given whenever the request doesn't set `isRoot`
+explicitly, so the two fields stay consistent without you having to think
+about it.
 
 **3. Partial response — only the requested fields, envelope included:**
 

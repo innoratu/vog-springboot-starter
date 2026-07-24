@@ -50,7 +50,7 @@ public class CategoryService {
         entity.setName(request.name());
         entity.setDescription(request.description());
         entity.setLifecycleStatus(request.lifecycleStatus() == null ? "In study" : request.lifecycleStatus());
-        entity.setIsRoot(request.isRoot() == null ? Boolean.TRUE : request.isRoot());
+        entity.setIsRoot(request.isRoot() == null ? request.parentId() == null : request.isRoot());
         entity.setValidFor(request.validFor());
         if (request.parentId() != null) {
             entity.setParent(resolveParent(request.parentId()));

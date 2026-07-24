@@ -62,6 +62,21 @@ class CategoryServiceTest {
     }
 
     @Test
+    void create_withParent_defaultsIsRootFalse() {
+        when(categories.findById(1L)).thenReturn(Optional.of(saved(1, "Mobile", "Active")));
+        when(categories.save(any())).thenAnswer(inv -> {
+            Category c = inv.getArgument(0);
+            c.setId(7L);
+            return c;
+        });
+
+        CategoryTmf out = service.create(new CategoryCreate("Mobile Postpaid", null, null, null, "1", null));
+
+        assertThat(out.isRoot()).isFalse();
+        assertThat(out.parentId()).isEqualTo("1");
+    }
+
+    @Test
     void create_unknownParentId_throwsInvalidInput() {
         when(categories.findById(99L)).thenReturn(Optional.empty());
 
