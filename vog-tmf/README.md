@@ -41,7 +41,7 @@ Once started:
 - API base: `http://localhost:8081/tmf-api/productCatalogManagement/v4`
 - **Swagger UI: `http://localhost:8081/swagger-ui.html`**
 - OpenAPI JSON: `http://localhost:8081/v3/api-docs`
-- H2 DB console: `http://localhost:8081/h2-console` (JDBC URL `jdbc:h2:mem:vogdb`, user `sa`, empty password)
+- Data is stored in an in-memory H2 database (`tmfdb`) that resets on restart; browse data via the API instead of a console.
 
 > **Prerequisite:** `vog-demo` should also be running on port 8080, since `vog-tmf` calls its
 > `/api/categories` endpoints to fetch the legacy data. If `vog-demo` is down, `vog-tmf` returns

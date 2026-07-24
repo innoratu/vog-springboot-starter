@@ -544,12 +544,4 @@ test both halves, how to explore the API, and how a request flows end to end.
 
 ## Where to next
 
-You now know Spring Boot: the tools, the framework, how to build a REST API, and
-how a request flows end to end. The next step is taking those skills and shaping
-an API to fit an industry-standard contract, not a home-grown one. Meet the
-**TM Forum Open APIs** — shared REST contracts that let telecom operators and
-vendors build interoperable systems instead of bespoke integrations, one pair at
-a time. [`vog-tmf/docs/TMF-TUTORIAL.md`](../../vog-tmf/docs/TMF-TUTORIAL.md)
-walks you through the same codebase you just finished, re-shaped to speak one of
-those standards — **TMF620, the Product Catalog Management API** — building on
-what you already know.
+You now know Spring Boot: the tools, the framework, how to build a REST API, and how requests flow. The next step is shaping an API to fit an industry-standard contract instead of a home-grown one. Meet **TM Forum Open APIs** — shared REST contracts that let the telecom industry build interoperable systems. [`vog-tmf/docs/TMF-TUTORIAL.md`](../../vog-tmf/docs/TMF-TUTORIAL.md) walks you through TMF620 (Product Catalog Management), building on what you already know.

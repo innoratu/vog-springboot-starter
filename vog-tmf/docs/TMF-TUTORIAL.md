@@ -1313,7 +1313,7 @@ to decide:
 | `Category.name` | `name` | Direct copy, no transformation needed. |
 | `Category.description` | `description` | Direct copy. |
 | *(none)* | `lifecycleStatus` | Legacy model has no status field at all — the adapter defaults every category to `"Active"`. |
-| *(none)* | `isRoot` | Adapter defaults it to `true` |
+| *(none)* | `isRoot` | Adapter defaults it to `true`. |
 | *(none)* | `validFor` | Legacy model has no validity window — left unset. |
 | *(none)* | `@type` | Not stored anywhere legacy-side — the adapter sets the literal `"Category"`. |
 | *(none)* | `href` | Not stored — computed by the adapter from the id, the same way `CategoryTmf.from` does in Part 3. |

@@ -55,7 +55,7 @@ vog-springboot-starter/
 │   ├── mvnw, mvnw.cmd, .mvn/     # Maven Wrapper
 │   ├── .sdkmanrc                 # pins Java 17 for this project (SDKMAN)
 │   ├── README.md                 # module overview: what it is, quick start, port 8081
-│   ├── src/main/java/com/vog/tmf/
+│   ├── src/main/java/com/vog/example/vog_tmf/
 │   ├── src/main/resources/
 │   │   └── application.properties    # runtime config (port 8081, etc.)
 │   ├── src/test/java/...         # automated tests
