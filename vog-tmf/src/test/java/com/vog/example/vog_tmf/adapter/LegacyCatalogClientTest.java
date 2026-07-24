@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withException;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import java.io.IOException;
@@ -11,11 +13,13 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
 import com.vog.example.vog_tmf.exception.DownstreamUnavailableException;
+import com.vog.example.vog_tmf.exception.NotFoundException;
 
 class LegacyCatalogClientTest {
 
@@ -45,6 +49,24 @@ class LegacyCatalogClientTest {
     void fetchCategories_connectionFailure_throwsDownstreamUnavailable() {
         server.expect(requestTo("/api/categories"))
                 .andRespond(withException(new IOException("Connection refused")));
+
+        assertThatThrownBy(() -> client.fetchCategories())
+                .isInstanceOf(DownstreamUnavailableException.class);
+    }
+
+    @Test
+    void fetchCategory_notFound_throwsNotFound() {
+        server.expect(requestTo("/api/categories/99"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+
+        assertThatThrownBy(() -> client.fetchCategory(99))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void fetchCategories_serverError_throwsDownstreamUnavailable() {
+        server.expect(requestTo("/api/categories"))
+                .andRespond(withServerError());
 
         assertThatThrownBy(() -> client.fetchCategories())
                 .isInstanceOf(DownstreamUnavailableException.class);

@@ -100,11 +100,12 @@ class ProductOfferingServiceTest {
         when(offerings.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         ProductOfferingTmf out = service.patch(5L, JsonMapper.builder().build()
-                .readTree("{\"description\":null,\"lifecycleStatus\":\"Launched\"}"));
+                .readTree("{\"description\":null,\"lifecycleStatus\":\"Launched\",\"isBundle\":true}"));
 
         assertThat(out.description()).isNull();
         assertThat(out.lifecycleStatus()).isEqualTo("Launched");
         assertThat(out.name()).isEqualTo("Mobile 5G");
+        assertThat(out.isBundle()).isTrue();
     }
 
     @Test

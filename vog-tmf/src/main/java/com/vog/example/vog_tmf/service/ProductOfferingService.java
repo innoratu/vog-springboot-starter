@@ -89,6 +89,9 @@ public class ProductOfferingService {
         if (patch.has("isSellable")) {
             entity.setIsSellable(patch.get("isSellable").isNull() ? null : patch.get("isSellable").asBoolean());
         }
+        if (patch.has("isBundle")) {
+            entity.setIsBundle(patch.get("isBundle").isNull() ? null : patch.get("isBundle").asBoolean());
+        }
         return ProductOfferingTmf.from(offerings.save(entity));
     }
 

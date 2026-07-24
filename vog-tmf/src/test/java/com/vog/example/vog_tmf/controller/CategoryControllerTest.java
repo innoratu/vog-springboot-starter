@@ -78,6 +78,24 @@ class CategoryControllerTest {
     }
 
     @Test
+    void get_nonNumericId_returns400TmfError() throws Exception {
+        mockMvc.perform(get(BASE + "/abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("400"))
+                .andExpect(jsonPath("$.reason").value("Bad Request"));
+    }
+
+    @Test
+    void get_unexpectedServiceError_returns500TmfError() throws Exception {
+        when(service.get(7L)).thenThrow(new RuntimeException("boom"));
+
+        mockMvc.perform(get(BASE + "/7"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value("500"))
+                .andExpect(jsonPath("$.message").value("Unexpected error"));
+    }
+
+    @Test
     void list_partialPage_returns206WithCountHeaders() throws Exception {
         when(service.list(any(), any(), anyInt(), anyInt()))
                 .thenReturn(new PageWindow<>(List.of(tmf("1", "A", "Active")), 3));

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import com.vog.example.vog_tmf.exception.DownstreamUnavailableException;
 import com.vog.example.vog_tmf.exception.NotFoundException;
@@ -29,6 +30,8 @@ public class LegacyCatalogClient {
                     });
         } catch (ResourceAccessException e) {
             throw unavailable(e);
+        } catch (RestClientException e) {
+            throw unavailable(e);
         }
     }
 
@@ -38,6 +41,8 @@ public class LegacyCatalogClient {
         } catch (HttpClientErrorException.NotFound e) {
             throw new NotFoundException("Category not found: " + id);
         } catch (ResourceAccessException e) {
+            throw unavailable(e);
+        } catch (RestClientException e) {
             throw unavailable(e);
         }
     }
