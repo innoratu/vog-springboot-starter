@@ -1,9 +1,10 @@
 # vog-tmf — TM Forum Open API (TMF620 Product Catalog)
 
-A second Spring Boot backend that exposes the same catalog data as `vog-demo`,
-shaped according to a **TM Forum Open API** instead of a home-grown one. Continues
-from the first tutorial — you should be comfortable with Spring Boot concepts
-before starting this one.
+A second Spring Boot backend that seeds its own small telco catalog and exposes
+it shaped according to a **TM Forum Open API** instead of a home-grown one. It
+also fronts `vog-demo`'s live catalog through a `/legacyCategory` adapter, as an
+example of modernizing an existing app. Continues from the first tutorial — you
+should be comfortable with Spring Boot concepts before starting this one.
 
 - **Framework:** Spring Boot 4.1.0, Java 17, Spring Data JPA, H2.
 - **API Standard:** TM Forum Open APIs — specifically **TMF620 (Product Catalog Management)**.
@@ -17,11 +18,13 @@ before starting this one.
 
 ## What it does
 
-Exposes the same **categories** and **product offerings/specifications** as `vog-demo`,
-but following the **TMF620 Product Catalog Management API** contract:
+Seeds and exposes its own **categories**, **product specifications**, and
+**product offerings** — a small telco catalog (Mobile/Internet/Business
+categories, 5G/Fibre specs and offerings) — following the **TMF620 Product
+Catalog Management API** contract:
 
 - RESTful endpoints that match TM Forum's resource shapes, URLs, and behavior.
-- A **facade/adapter** that reads `vog-demo`'s REST API (standing in for a legacy system) and reshapes it to TMF620 — the real-world playbook for modernizing existing apps.
+- A **facade/adapter** (`/legacyCategory`) that reads `vog-demo`'s live REST API (standing in for a legacy system) and reshapes it to TMF620 — the real-world playbook for modernizing existing apps.
 - Seeds example data on startup.
 - Interactive **Swagger UI** so you can explore and call the API without external tools.
 
@@ -64,9 +67,9 @@ Runs automated tests against the repository, service, and controller layers.
 
 | TMF620 Resource | What it is | Where it's built | Tutorial part |
 |---|---|---|---|
-| **Category** | Top-level folder for organizing products. Mapped from `vog-demo`'s legacy `Category` entity via the adapter. | `controller/`, `service/`, `adapter/LegacyCategoryAdapterController.java` | Part 7 (migration playbook) |
-| **ProductSpecification** | The template for a product: what fields it has, what values are valid, etc. Maps to `vog-demo`'s `Organism`. | `controller/`, `service/`, `entity/` | Part 3 |
-| **ProductOffering** | A product ready to sell — a concrete version of a ProductSpecification with pricing, availability, and status. | `controller/`, `service/`, `entity/` | Part 5 |
+| **Category** | Top-level folder for organizing products, e.g. Mobile, Internet, Business. Own seeded entity, plus a `/legacyCategory` adapter that reshapes `vog-demo`'s live `Category` data into the same TMF620 shape. | `controller/`, `service/`, `entity/`, `adapter/LegacyCategoryAdapterController.java` | Part 3 (built); Part 7 (`legacyCategory` migration playbook) |
+| **ProductSpecification** | The template for a product: what fields it has, what values are valid, etc., e.g. "5G SIM-Only Spec", "Fibre 1G Spec". | `controller/`, `service/`, `entity/` | Part 3 |
+| **ProductOffering** | A product ready to sell — a concrete version of a ProductSpecification with a lifecycle status, e.g. "Mobile 5G Unlimited", "Business Fibre 1G". | `controller/`, `service/`, `entity/` | Part 3 |
 
 The **grammar** — the resource envelope (`id`, `href`, `@type`), error shapes,
 HTTP verbs, filtering, and partial responses — is **TMF630**, the Design Guidelines

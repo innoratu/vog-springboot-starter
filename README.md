@@ -99,7 +99,7 @@ cd vog-web && npm install && npm run dev
 
 - App UI: http://localhost:5173
 - Swagger UI: http://localhost:8080/swagger-ui.html
-- TMF API: http://localhost:8081/swagger-ui.html
+- TMF Swagger UI: http://localhost:8081/swagger-ui.html
 
 ## Documentation
 

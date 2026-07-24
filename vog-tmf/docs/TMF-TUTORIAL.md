@@ -623,6 +623,10 @@ public record CategoryRef(
 `ProductOfferingTmf` embeds one `ProductSpecificationRef` and a
 `List<CategoryRef>` — a link, not a copy.
 
+Note that `href` here is built as a path only, for simplicity; TMF `href`s are
+conventionally absolute URIs, and a production implementation would build them
+from the incoming request's scheme/host/port rather than hard-coding a path.
+
 ### `service/` — merge patch, filtering, and windowing
 
 `CategoryService.patch` is the clearest place to see JSON Merge Patch (Part
@@ -1248,6 +1252,13 @@ types); you own the implementation. Regenerating after a spec update changes
 the interface, and the compiler tells you exactly which methods need
 updating — a hand-maintained code-first version has to notice the spec
 changed on its own.
+
+In practice the service doesn't slot in entirely unchanged as drawn above:
+generated model classes use plain types like `String` ids, so real
+contract-first code adds a small mapping layer that converts between those
+generated types and your domain DTOs (e.g. parsing the `String` id to the
+`Long` `CategoryService.get` expects, and mapping the domain result back to
+the generated `Category` model).
 
 ### When to choose which
 
