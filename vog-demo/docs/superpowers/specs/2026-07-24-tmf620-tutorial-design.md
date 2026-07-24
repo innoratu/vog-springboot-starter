@@ -136,6 +136,14 @@ previously-taught term links back on first use; every new TMF term is introduced
   filtering, pagination. Each contrasted with what the reader already built in vog-demo.
 - **Part 2 — TMF620 specifically.** Catalog → category → productOffering → productSpecification,
   relationship diagram, which slice we implement and why hub/import-export are out of scope.
+  Closes with **"The TMF implementation workflow at a glance"** (user follow-up requirement):
+  a numbered quick-reference of the best-practice steps for implementing any TMF API — pick the
+  API from the TM Forum Open API table → download the spec bundle (OAS file, user guide,
+  conformance profile) → study the interface (resources, mandatory fields, verbs) → choose
+  code-first vs contract-first → map your domain (mapping table) → implement (envelope, verbs,
+  errors, TMF630 patterns) → test + CTK → publish behind the gateway — each step one sentence,
+  plus a mermaid flow diagram of the same steps, with pointers to the tutorial part that walks
+  each step in depth.
 - **Part 3 — Build it from scratch.** Layer-by-layer walk of `vog-tmf` ("you already know
   `@RestController` — link — here's what TMF adds"), including the envelope mapping, merge-patch
   handling, and the filtering/pagination utilities.
