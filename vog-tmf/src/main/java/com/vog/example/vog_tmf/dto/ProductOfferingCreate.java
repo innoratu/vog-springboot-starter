@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.vog.example.vog_tmf.tmf.TimePeriod;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 
 public record ProductOfferingCreate(
@@ -13,8 +14,8 @@ public record ProductOfferingCreate(
         Boolean isSellable,
         String lifecycleStatus,
         TimePeriod validFor,
-        RefId productSpecification,
-        List<RefId> category) {
+        @Valid RefId productSpecification,
+        List<@Valid RefId> category) {
 
     public record RefId(@NotBlank String id) {
     }
