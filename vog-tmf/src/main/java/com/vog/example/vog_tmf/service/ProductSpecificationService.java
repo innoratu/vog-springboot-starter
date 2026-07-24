@@ -6,8 +6,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.vog.example.vog_tmf.dto.ProductSpecificationCreate;
 import com.vog.example.vog_tmf.dto.ProductSpecificationTmf;
 import com.vog.example.vog_tmf.entity.ProductSpecification;
+import com.vog.example.vog_tmf.exception.InUseException;
 import com.vog.example.vog_tmf.exception.InvalidInputException;
 import com.vog.example.vog_tmf.exception.NotFoundException;
+import com.vog.example.vog_tmf.repository.ProductOfferingRepository;
 import com.vog.example.vog_tmf.repository.ProductSpecificationRepository;
 import com.vog.example.vog_tmf.tmf.PageWindow;
 
@@ -20,9 +22,11 @@ import tools.jackson.databind.JsonNode;
 public class ProductSpecificationService {
 
     private final ProductSpecificationRepository specs;
+    private final ProductOfferingRepository offerings;
 
-    public ProductSpecificationService(ProductSpecificationRepository specs) {
+    public ProductSpecificationService(ProductSpecificationRepository specs, ProductOfferingRepository offerings) {
         this.specs = specs;
+        this.offerings = offerings;
     }
 
     @Transactional(readOnly = true)
@@ -77,7 +81,11 @@ public class ProductSpecificationService {
     }
 
     public void delete(Long id) {
-        specs.delete(findOrThrow(id));
+        ProductSpecification entity = findOrThrow(id);
+        if (offerings.existsByProductSpecificationId(id)) {
+            throw new InUseException("ProductSpecification " + id + " is referenced by product offerings");
+        }
+        specs.delete(entity);
     }
 
     private ProductSpecification findOrThrow(Long id) {

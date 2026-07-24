@@ -6,9 +6,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.vog.example.vog_tmf.dto.CategoryCreate;
 import com.vog.example.vog_tmf.dto.CategoryTmf;
 import com.vog.example.vog_tmf.entity.Category;
+import com.vog.example.vog_tmf.exception.InUseException;
 import com.vog.example.vog_tmf.exception.InvalidInputException;
 import com.vog.example.vog_tmf.exception.NotFoundException;
 import com.vog.example.vog_tmf.repository.CategoryRepository;
+import com.vog.example.vog_tmf.repository.ProductOfferingRepository;
 import com.vog.example.vog_tmf.tmf.PageWindow;
 
 import java.util.List;
@@ -20,9 +22,11 @@ import tools.jackson.databind.JsonNode;
 public class CategoryService {
 
     private final CategoryRepository categories;
+    private final ProductOfferingRepository offerings;
 
-    public CategoryService(CategoryRepository categories) {
+    public CategoryService(CategoryRepository categories, ProductOfferingRepository offerings) {
         this.categories = categories;
+        this.offerings = offerings;
     }
 
     @Transactional(readOnly = true)
@@ -76,7 +80,11 @@ public class CategoryService {
     }
 
     public void delete(Long id) {
-        categories.delete(findOrThrow(id));
+        Category entity = findOrThrow(id);
+        if (offerings.existsByCategoriesId(id)) {
+            throw new InUseException("Category " + id + " is referenced by product offerings");
+        }
+        categories.delete(entity);
     }
 
     private Category resolveParent(String parentId) {

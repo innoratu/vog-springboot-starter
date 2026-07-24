@@ -17,7 +17,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.vog.example.vog_tmf.dto.ProductSpecificationCreate;
 import com.vog.example.vog_tmf.dto.ProductSpecificationTmf;
 import com.vog.example.vog_tmf.entity.ProductSpecification;
+import com.vog.example.vog_tmf.exception.InUseException;
 import com.vog.example.vog_tmf.exception.NotFoundException;
+import com.vog.example.vog_tmf.repository.ProductOfferingRepository;
 import com.vog.example.vog_tmf.repository.ProductSpecificationRepository;
 import com.vog.example.vog_tmf.tmf.PageWindow;
 
@@ -28,6 +30,9 @@ class ProductSpecificationServiceTest {
 
     @Mock
     ProductSpecificationRepository specs;
+
+    @Mock
+    ProductOfferingRepository offerings;
 
     @InjectMocks
     ProductSpecificationService service;
@@ -88,5 +93,13 @@ class ProductSpecificationServiceTest {
         when(specs.findById(42L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.get(42L)).isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void delete_referencedByOffering_throwsInUse() {
+        when(specs.findById(5L)).thenReturn(Optional.of(saved(5, "Mobile", "Active")));
+        when(offerings.existsByProductSpecificationId(5L)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.delete(5L)).isInstanceOf(InUseException.class);
     }
 }

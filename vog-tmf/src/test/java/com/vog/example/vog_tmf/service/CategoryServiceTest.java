@@ -17,9 +17,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.vog.example.vog_tmf.dto.CategoryCreate;
 import com.vog.example.vog_tmf.dto.CategoryTmf;
 import com.vog.example.vog_tmf.entity.Category;
+import com.vog.example.vog_tmf.exception.InUseException;
 import com.vog.example.vog_tmf.exception.InvalidInputException;
 import com.vog.example.vog_tmf.exception.NotFoundException;
 import com.vog.example.vog_tmf.repository.CategoryRepository;
+import com.vog.example.vog_tmf.repository.ProductOfferingRepository;
 import com.vog.example.vog_tmf.tmf.PageWindow;
 
 import tools.jackson.databind.json.JsonMapper;
@@ -29,6 +31,9 @@ class CategoryServiceTest {
 
     @Mock
     CategoryRepository categories;
+
+    @Mock
+    ProductOfferingRepository offerings;
 
     @InjectMocks
     CategoryService service;
@@ -96,5 +101,13 @@ class CategoryServiceTest {
         when(categories.findById(42L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.get(42L)).isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void delete_referencedByOffering_throwsInUse() {
+        when(categories.findById(5L)).thenReturn(Optional.of(saved(5, "Mobile", "Active")));
+        when(offerings.existsByCategoriesId(5L)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.delete(5L)).isInstanceOf(InUseException.class);
     }
 }
