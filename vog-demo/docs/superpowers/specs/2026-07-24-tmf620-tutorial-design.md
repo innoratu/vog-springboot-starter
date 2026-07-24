@@ -106,7 +106,8 @@ Test layers, following the test pyramid:
   201 + `Location`, 204 delete, merge-patch semantics, `?fields=` projection, pagination headers
   (`X-Total-Count`/`X-Result-Count`, 206 vs 200).
 - **Repository slice test** — `@DataJpaTest` against H2 for the self-referencing category mapping.
-- **Adapter client test** — `@RestClientTest` + `MockRestServiceServer`: stub vog-demo's
+- **Adapter client test** — plain JUnit + `MockRestServiceServer.bindTo(RestClient.Builder)` (no
+  Spring context needed): stub vog-demo's
   `/api/categories` responses (including a connection-refused case → TMF 503 error) without vog-demo
   running. Controller side reuses `@WebMvcTest` with the client mocked.
 - **One full-context smoke test** — `@SpringBootTest` (context loads, seeder runs), mirroring
