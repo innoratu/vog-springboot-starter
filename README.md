@@ -9,6 +9,7 @@ Spring Boot + React example.
 | Folder | Stack | Description |
 |--------|-------|-------------|
 | [`vog-demo/`](vog-demo/) | Spring Boot 4.1.0, Java 17, Spring Data JPA, H2 | REST API backend |
+| `vog-tmf/` | Spring Boot 4.1.0, Java 17, TM Forum Open APIs | TMF620 Product Catalog implementation (port 8081) |
 | `vog-web/` | React + Vite + TypeScript | Frontend that consumes the API |
 
 ## Repository structure
@@ -49,6 +50,19 @@ vog-springboot-starter/
 │           ├── specs/                # the approved design spec (what to build + why)
 │           └── plans/                # the implementation plan (ordered, testable build tasks)
 │
+├── vog-tmf/                      # ── BACKEND (Spring Boot + TM Forum Open APIs) ──
+│   ├── pom.xml                   # Maven build
+│   ├── mvnw, mvnw.cmd, .mvn/     # Maven Wrapper
+│   ├── .sdkmanrc                 # pins Java 17 for this project (SDKMAN)
+│   ├── README.md                 # module overview: what it is, quick start, port 8081
+│   ├── src/main/java/com/vog/tmf/
+│   ├── src/main/resources/
+│   │   └── application.properties    # runtime config (port 8081, etc.)
+│   ├── src/test/java/...         # automated tests
+│   │
+│   └── docs/
+│       └── TMF-TUTORIAL.md           # step-by-step TMF620 implementation tutorial
+│
 └── vog-web/                      # ── FRONTEND (React + Vite + TypeScript) ──
     ├── package.json              # frontend dependencies and scripts
     ├── .env                      # VITE_API_BASE — where the backend API lives
@@ -70,11 +84,14 @@ vog-springboot-starter/
 
 ## Quick start
 
-Run both in separate terminals:
+Run in separate terminals:
 
 ```bash
 # Backend (port 8080)
 cd vog-demo && sdk env && ./mvnw spring-boot:run
+
+# TMF backend (port 8081)
+cd vog-tmf && sdk env && ./mvnw spring-boot:run
 
 # Frontend (port 5173)
 cd vog-web && npm install && npm run dev
@@ -82,6 +99,7 @@ cd vog-web && npm install && npm run dev
 
 - App UI: http://localhost:5173
 - Swagger UI: http://localhost:8080/swagger-ui.html
+- TMF API: http://localhost:8081/swagger-ui.html
 
 ## Documentation
 
@@ -93,3 +111,7 @@ All docs live under [`vog-demo/docs/`](vog-demo/docs/):
 - **[REAL-LIFE-EXAMPLE.md](vog-demo/docs/REAL-LIFE-EXAMPLE.md)** — how these fundamentals scale up in a production TELUS service.
 - **[ENVIRONMENT.md](vog-demo/docs/ENVIRONMENT.md)** — environment setup & Java version management.
 - See also [`vog-demo/README.md`](vog-demo/README.md) for backend details, API, and request-flow diagrams.
+
+For `vog-tmf` (the TM Forum Open APIs module):
+
+- **[TMF-TUTORIAL.md](vog-tmf/docs/TMF-TUTORIAL.md)** — step-by-step tutorial on building a TMF620 Product Catalog API, building on the Spring Boot knowledge from above.
