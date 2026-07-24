@@ -91,11 +91,35 @@ the **facade/adapter strategy** — the same pattern used to put a TMF face on a
 product specifications, 3–4 product offerings (e.g. "Mobile 5G Unlimited") so every curl/Swagger
 example in the doc returns real data.
 
-### Testing
+### Testing — frameworks and approach
 
-Mirrors vog-demo patterns: MockMvc controller tests (Boot 4 per-module test-slice packages),
-service unit tests, repository test. Adapter tested with a mocked `LegacyCatalogClient`.
+Frameworks (all arrive via `spring-boot-starter-test`, same as vog-demo, so prior knowledge
+transfers): **JUnit 5** (test runner), **AssertJ** (fluent assertions), **Mockito** (mocking),
+**MockMvc** (HTTP-layer tests without a server), **JsonPath** (asserting JSON bodies). Boot 4
+note: test-slice annotations live in per-technology packages (see repo memory / dev guide).
+
+Test layers, following the test pyramid:
+
+- **Service unit tests** — plain JUnit 5 + Mockito, no Spring context. Fast; business rules only.
+- **Controller slice tests** — `@WebMvcTest` + MockMvc + `@MockitoBean` services. This is where the
+  TMF specifics get pinned down: envelope fields present (`href`, `@type`), TMF error body shape,
+  201 + `Location`, 204 delete, merge-patch semantics, `?fields=` projection, pagination headers
+  (`X-Total-Count`/`X-Result-Count`, 206 vs 200).
+- **Repository slice test** — `@DataJpaTest` against H2 for the self-referencing category mapping.
+- **Adapter client test** — `@RestClientTest` + `MockRestServiceServer`: stub vog-demo's
+  `/api/categories` responses (including a connection-refused case → TMF 503 error) without vog-demo
+  running. Controller side reuses `@WebMvcTest` with the client mocked.
+- **One full-context smoke test** — `@SpringBootTest` (context loads, seeder runs), mirroring
+  `VogDemoApplicationTests`.
+
 `./mvnw test` green is the acceptance gate, plus the doc's curl walkthrough verified manually.
+
+Best practices taught in the doc (and demonstrated where cheap): test the contract, not the
+implementation (assert JSON shape, not DTO internals); one behaviour per test, given/when/then
+naming; slice tests over `@SpringBootTest` for speed; deterministic seed data in tests (never rely
+on `DataSeeder`). Mentioned with pointers but **not implemented**: Testcontainers (when a real DB
+replaces H2), REST Assured (black-box API tests), Pact/consumer-driven contracts, and the TMF
+**CTK** as the conformance-level test suite.
 
 ## Tutorial document: `vog-tmf/docs/TMF-TUTORIAL.md`
 
@@ -117,10 +141,15 @@ previously-taught term links back on first use; every new TMF term is introduced
 - **Part 4 — Run and verify.** `./mvnw spring-boot:run` on 8081, curl walkthrough for every
   pattern (create → 201/Location, fields, filtering, pagination headers, merge patch, TMF error),
   Swagger UI, running vog-demo + vog-tmf together to see the adapter live.
-- **Part 5 — Production best practice: contract-first.** Official TMF620 OAS file,
+- **Part 5 — Testing a TMF API.** The test pyramid recapped (link back to how vog-demo's tests
+  were introduced), the frameworks in `spring-boot-starter-test` named and each given a one-line
+  role, then what is *TMF-specific* to test: envelope, error body, merge-patch, `fields`,
+  pagination headers, and the adapter's downstream failure. Walks the actual `vog-tmf` tests.
+  Closes with the production ladder: Testcontainers, REST Assured, Pact, TMF CTK.
+- **Part 6 — Production best practice: contract-first.** Official TMF620 OAS file,
   `openapi-generator-maven-plugin` config shown and explained (not wired into the build), pros/cons
   vs hand-written, TMF Conformance Test Kit (CTK), API versioning (v4 in the path).
-- **Part 6 — Migrating existing and legacy apps to TMF (the playbook).** The concise proven
+- **Part 7 — Migrating existing and legacy apps to TMF (the playbook).** The concise proven
   method, told for the reader's real estate (GKE target, WebLogic/Java/Maven legacy):
   1. Pick the TMF API + resources that match the app's domain (mapping table technique, shown
      concretely for vog-demo → TMF620).
@@ -135,7 +164,7 @@ previously-taught term links back on first use; every new TMF term is introduced
   4. Conformance check (CTK), then cut consumers over behind the API gateway.
   Worked example = the coded adapter from Part 3/4. Explicit note on what changes when the
   "legacy" side is WebLogic (SOAP/EJB-era interfaces → adapter also does protocol translation).
-- **Part 7 — Glossary and where to next.** TMF terms table; pointers to other TMF APIs (TMF632,
+- **Part 8 — Glossary and where to next.** TMF terms table; pointers to other TMF APIs (TMF632,
   TMF641), ODA, and the repo's other docs.
 
 ### Other doc touches
@@ -163,5 +192,8 @@ All error paths return the TMF error body. Validation failures → 400 with fiel
    vog-demo's categories in TMF shape; with vog-demo stopped it returns a TMF 503 error body.
 4. Every previously-taught term in the new doc links to the existing docs on first use; every new
    TMF term is defined before use.
-5. Part 6 playbook is self-contained: a reader with a WebLogic/Maven legacy app knows which
+5. Part 7 playbook is self-contained: a reader with a WebLogic/Maven legacy app knows which
    strategy to pick and what the first three concrete steps are.
+6. Test suite covers every layer listed in the Testing section, including at least one test per
+   TMF-specific behaviour (envelope, error body, merge patch, fields, pagination headers,
+   adapter 503).
