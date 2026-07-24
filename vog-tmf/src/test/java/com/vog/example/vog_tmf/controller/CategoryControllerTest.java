@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -134,5 +135,13 @@ class CategoryControllerTest {
     void delete_returns204() throws Exception {
         mockMvc.perform(delete(BASE + "/5")).andExpect(status().isNoContent());
         Mockito.verify(service).delete(5L);
+    }
+
+    @Test
+    void put_returns405TmfError() throws Exception {
+        mockMvc.perform(put(BASE + "/1"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.code").value("405"))
+                .andExpect(jsonPath("$.reason").value("Method Not Allowed"));
     }
 }
