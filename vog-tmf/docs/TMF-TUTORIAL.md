@@ -1133,6 +1133,32 @@ error-handling code.
 `vog-demo`'s, listing all three controllers with their request/response
 schemas, useful for poking at endpoints without hand-typing curl.
 
+### How the spec, Swagger UI, and the code connect
+
+Three things, one chain. `vog-tmf` is **code-first** (Part 6), so:
+
+- **The code** is the source of truth — your annotated controllers and DTOs
+  (`@GetMapping`, `@RequestMapping`, the Jackson annotations from Part 1).
+- **The OpenAPI spec** at `http://localhost:8081/v3/api-docs` is a
+  machine-readable JSON description of those endpoints and schemas. You don't
+  write it — **springdoc generates it from the code** at startup.
+- **Swagger UI** is just a web page that **reads that spec and renders it** as
+  the interactive explorer above; it's also what other tools (e.g. Postman —
+  see [`POSTMAN.md`](POSTMAN.md)) import to build request collections.
+
+The arrow points one way:
+
+```
+code  ──springdoc──▶  OpenAPI spec (/v3/api-docs)  ──renders──▶  Swagger UI
+```
+
+Change a controller, restart, and the spec regenerates and Swagger UI updates on
+its own. **Swagger UI is a read-only viewer — editing there does not change your
+code.** So "do I design in Swagger UI first, then write code?" — no, not in a
+code-first project: the code leads, the spec and UI follow. The reverse direction
+— author a spec file first and *generate* the code from it (`spec ──▶ code`) — is
+**contract-first**, and Part 6 covers when to choose it.
+
 ---
 
 ## Part 5 — Testing a TMF API
