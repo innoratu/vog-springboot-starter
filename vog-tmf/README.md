@@ -12,6 +12,7 @@ should be comfortable with Spring Boot concepts before starting this one.
 
 **Docs:**
 - [`docs/TMF-TUTORIAL.md`](docs/TMF-TUTORIAL.md) — step-by-step tutorial: what TM Forum is, the shared REST grammar (TMF630), TMF620's resources, building the API, and the real-world playbook for migrating legacy systems.
+- [`docs/POSTMAN.md`](docs/POSTMAN.md) — how to test this API with Postman: import the OpenAPI spec to auto-generate a collection of sample requests (the UI only talks to `vog-demo`, so this is how you exercise `vog-tmf`).
 - **Design & Implementation:** [`vog-demo/docs/superpowers/specs/2026-07-24-tmf620-tutorial-design.md`](../vog-demo/docs/superpowers/specs/2026-07-24-tmf620-tutorial-design.md) (approved design spec) and [`vog-demo/docs/superpowers/plans/2026-07-24-tmf620-tutorial.md`](../vog-demo/docs/superpowers/plans/2026-07-24-tmf620-tutorial.md) (ordered build plan).
 
 ---
@@ -74,6 +75,11 @@ Runs automated tests against the repository, service, and controller layers.
 The **grammar** — the resource envelope (`id`, `href`, `@type`), error shapes,
 HTTP verbs, filtering, and partial responses — is **TMF630**, the Design Guidelines
 that every TM Forum Open API shares. Part 1 of the tutorial walks you through it.
+
+> **Implementing a subset?** You can — TMF is a contract you extend additively, not
+> a spec you must reproduce byte-for-byte. See
+> [Conformance in practice — what you can and can't change](docs/TMF-TUTORIAL.md#conformance-in-practice--what-you-can-and-cant-change)
+> for the additive-vs-breaking rule and examples.
 
 ---
 
