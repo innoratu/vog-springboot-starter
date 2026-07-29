@@ -69,6 +69,113 @@ software often require "TMF Open API Conformance Certified": it's the buyer's
 evidence that a vendor's API genuinely follows the contract, not just
 something that resembles it.
 
+### Conformance in practice — what you can and can't change
+
+New team members almost always ask the same thing: *when I implement a TMF Open
+API, do I have to reproduce it exactly, or can I add my own endpoints and
+fields?* The answer is the single most important rule to internalize, so here it
+is up front:
+
+> **You must respect the contract. "Respect" means additive-compatible — never
+> breaking. You can add; you generally shouldn't subtract from the mandatory
+> core; and you must never change the *signature* of what the standard defines.**
+
+Think of a TMF Open API exactly like **implementing an interface in code**. You
+can add your own extra methods, and you can skip the optional ones — but every
+method you *do* claim to support must have the exact signature the interface
+declares, or every caller written against that interface breaks.
+
+#### The rule of thumb: additive is fine, breaking is not
+
+- **Additive change** (allowed): adding something new that an existing client can
+  simply ignore. An old client keeps working.
+- **Breaking change** (not allowed): renaming, removing, retyping, or re-verbing
+  something an existing client already depends on. An old client stops working.
+
+Interoperability — the entire reason TMF exists — is precisely the guarantee
+that *any* client written to the spec works against *any* conformant server. A
+breaking change voids that guarantee.
+
+#### Must match exactly (the signature)
+
+For every operation you expose, these are fixed by the spec and cannot be
+altered:
+
+- **Resource names and URL structure** — `/category`, `/productOffering`, …
+- **Field names, types, and the envelope** — `id`, `href`, `@type`
+- **HTTP verbs and their meaning** — GET / POST / PATCH / DELETE
+- **Status codes and the error body shape** (the TMF630 grammar from Part 1)
+- **Filtering and partial-response conventions** — `?fields=`, query filters
+
+#### You legitimately *can* vary
+
+1. **Implement a subset.** TMF specs mark resources, operations, and fields as
+   **mandatory vs optional**, and many ship a **conformance profile** naming the
+   required minimum. You don't have to build the whole API. `vog-tmf` implements
+   `category`, `productSpecification`, and `productOffering` — a slice of TMF620,
+   not all of it — and that's still conformant, because what it *does* expose
+   matches the contract.
+2. **Extend additively.** Add optional fields, extra query parameters, or whole
+   extra resources. The `@type` field exists precisely so a resource can be a
+   richer subtype without breaking clients that only know the base type.
+3. **Add non-TMF endpoints alongside.** Health checks, admin routes, or a custom
+   adapter aren't part of the TMF surface but can live in the same service.
+   `vog-tmf`'s `/legacyCategory` facade is exactly this: an added resource that
+   still speaks the TMF grammar.
+
+#### Worked examples
+
+Say the spec defines a `Category` like this:
+
+```jsonc
+{ "id": "1", "href": ".../category/1", "@type": "Category", "name": "Mobile" }
+```
+
+**✅ Allowed — add an optional field.** A client that doesn't know `color`
+ignores it; nothing breaks.
+
+```jsonc
+{ "id": "1", "href": ".../category/1", "@type": "Category",
+  "name": "Mobile", "color": "#4B286D" }   // extra, additive
+```
+
+**❌ Breaking — rename a standard field.** Every client looking for `name` now
+finds nothing. This is a changed signature.
+
+```jsonc
+{ "id": "1", "href": ".../category/1", "@type": "Category",
+  "categoryName": "Mobile" }               // renamed — NOT conformant
+```
+
+**❌ Breaking — change a type.** The spec says `id` is a string; returning a
+number breaks clients that parse it as a string.
+
+```jsonc
+{ "id": 1, "@type": "Category", "name": "Mobile" }   // number, not string
+```
+
+More, at a glance:
+
+| Change | Verdict | Why |
+|---|---|---|
+| Add a new endpoint `GET /categoryHealth` | ✅ Allowed | Extra surface; standard endpoints untouched |
+| Add optional `?sort=name` query param | ✅ Allowed | Old clients that omit it are unaffected |
+| Don't implement an optional operation | ✅ Allowed | Subset is conformant if the profile permits |
+| Return `@type` as `"MobileCategory"` (a subtype) | ✅ Allowed | Polymorphic extension via `@type` |
+| Rename `lifecycleStatus` → `status` | ❌ Breaking | Clients depend on the exact field name |
+| Change `POST /category` to `PUT` | ❌ Breaking | Verb is part of the signature |
+| Return `500` where the spec says `404` | ❌ Breaking | Status codes are part of the contract |
+| Drop the `href` field from responses | ❌ Breaking | Mandatory envelope field |
+
+#### How you *prove* it
+
+You don't just eyeball this. TM Forum's **Conformance Test Kit (CTK)** runs the
+mandatory contract against your implementation, and certification is what lets a
+vendor claim "TMF Open API Conformance Certified." Your own tests should encode
+the same intent — this repo's controller tests, for instance, assert the
+envelope (`id`/`href`/`@type`) and status codes on every response, which is a
+lightweight, in-repo version of the same discipline.
+
 ### Where the specs live
 
 Two places, and this tutorial doesn't invent any others:
