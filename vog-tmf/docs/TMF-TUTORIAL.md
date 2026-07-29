@@ -441,6 +441,46 @@ vocabulary, a validity window, a consistent error shape, `PATCH`-with-merge-
 patch instead of `PUT`, and a small set of query conventions for filtering
 and paging. Every TMF620 resource in Part 2 reuses all of it.
 
+### Seeing it in a real API
+
+These aren't just tutorial conventions. Here's a trimmed response from a real
+TELUS product API (`wls-offering-instance-mgmt`) — a live service, not this
+tutorial's code — showing the exact same grammar in production:
+
+```jsonc
+{
+  "@type": "WLSPricePlanOfferingInstance",
+  "id": "8-C4161062180-PTLK100CF-125470401-0",
+  "href": "/product/wlsOfferingInstanceManagement/v1/offeringInstance/8-C4161062180-PTLK100CF-125470401-0",
+  "productOfferingRef": {
+    "id": "PTLK100CF",
+    "href": "/product/wlsProductCatalogMgmt/v1/productOffering/PTLK100CF"
+  },
+  "validFor": { "startDateTime": "2013-12-31T12:00:00Z" },
+  "@baseType": "WLSOfferingInstance",
+  "characteristics": [
+    { "name": "PRODUCT_OFFERING_TYPE", "valueType": "text", "value": "P" }
+  ]
+}
+```
+
+Every concept from this Part is right there:
+
+- **`@type` / `id` / `href`** — the same envelope. (`@type` here is a vendor
+  subtype, `WLSPricePlanOfferingInstance`, but it's the same field doing the
+  same job.)
+- **`href`** — a dereferenceable URL to *this exact resource*.
+- **`productOfferingRef`** — a **`*Ref`**: a lightweight pointer (`id` + `href`)
+  to a resource that lives in a *different* API (Product Catalog), instead of
+  embedding the whole thing. You'll build `*Ref` types yourself in Part 3.
+- **`validFor`** — the same validity window, here open-ended (a start with no
+  end).
+
+And note `@baseType` and `characteristics` — fields this tutorial doesn't use.
+That's the **additive extension** from Part 0's conformance rule in action: the
+standard envelope is respected exactly, and the vendor adds its own fields
+*around* it rather than changing what's standard.
+
 ---
 
 ## Part 2 — TMF620, the Product Catalog API
